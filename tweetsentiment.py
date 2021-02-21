@@ -28,8 +28,8 @@ from time import time
 from sklearn.metrics import f1_score, precision_score, recall_score, accuracy_score
 
 #Read .csv files into train and test data with the right encoding!
-train_data = pd.read_csv('/content/SocialMedia_Negative.csv', encoding= 'unicode_escape')
-test_data = pd.read_csv('/content/SocialMedia_Positive.csv', encoding= 'unicode_escape')
+train_data = pd.read_csv('/content/SocialMedia.csv', encoding= 'unicode_escape')
+test_data = pd.read_csv('/content/SocialMedia2.csv', encoding= 'unicode_escape')
 
 # Analyze the 1st 5 posts of train_data file
 train_data.head()
@@ -55,7 +55,7 @@ train_data.info()
 #Function to clean tweets
  #Remove URLs
  #Remove usernames (mentions)
- #Remove special characters EXCEPT FROM :,)
+ #Remove special characters 
  #Remove Numbers 
 
 
@@ -92,13 +92,14 @@ from nltk.tokenize import TweetTokenizer
 tt = TweetTokenizer()
 train_data['Text'].apply(tt.tokenize)
 
-from nltk.stem import PorterStemmer
+from nltk.stem import PorterStemmer   #Libraries for tokenize words
 from nltk.tokenize import sent_tokenize, word_tokenize
 
 ps = PorterStemmer()
 
-def tokenize(text):
+def tokenize(text):                    # funtion for tokenize words and analyze Text
     return word_tokenize(text)
+
 
 def stemming(words):
     stem_words = []
@@ -114,9 +115,9 @@ train_data['text'] = train_data['Text'].apply(tokenize)
 # apply steming function
 train_data['tokenized'] = train_data['text'].apply(stemming)
 
-train_data.head()
+train_data.head()  #See the 1st 5 tokenize reults
 
-words = Counter()
+words = Counter()    # Words analyze  (5 most common) with count of them
 for idx in train_data.index:
     words.update(train_data.loc[idx, "text"])
 
@@ -131,7 +132,7 @@ for idx, stop_word in enumerate(stopwords):
         del words[stop_word]
 words.most_common(5)
 
-def word_list(processed_data):
+def word_list(processed_data):    # WORDLIST FUNCTION FOR ANALYZE MOST COMMON WORDS WITH PURPOSE TO IDENTIFY OUR APP THE REAL SENTIMENT
     #print(processed_data)
     min_occurrences=3 
     max_occurences=500 
@@ -148,8 +149,8 @@ def word_list(processed_data):
     for idx, stop_word in enumerate(stopwords):
         if stop_word not in whitelist:
             del words[stop_word]
-    #print(words)
-
+   
+#print(words)
     word_df = pd.DataFrame(data={"word": [k for k, v in words.most_common() if min_occurrences < v < max_occurences],
                                  "occurrences": [v for k, v in words.most_common() if min_occurrences < v < max_occurences]},
                            columns=["word", "occurrences"])
@@ -158,13 +159,13 @@ def word_list(processed_data):
     wordlist = [k for k, v in words.most_common() if min_occurrences < v < max_occurences]
     #print(wordlist)
 
-word_list(train_data)
+word_list(train_data)  #TRAIN DATA INTO WORDLIST FOR ANALYZE
 
-words = pd.read_csv("wordlist.csv")
+words = pd.read_csv("wordlist.csv")  #CREATE WORDLIST CSV WITH THE MOST COMMON WORDS
 
 import os
 
-wordlist= []
+wordlist= []    #CREATE THE FILE WORDLIST
 if os.path.isfile("wordlist.csv"):
     word_df = pd.read_csv("wordlist.csv")
     word_df = word_df[word_df["occurrences"] > 3]
