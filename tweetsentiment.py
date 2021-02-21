@@ -31,6 +31,12 @@ from sklearn.metrics import f1_score, precision_score, recall_score, accuracy_sc
 train_data = pd.read_csv('/content/SocialMedia.csv', encoding= 'unicode_escape')
 test_data = pd.read_csv('/content/SocialMedia2.csv', encoding= 'unicode_escape')
 
+
+
+
+
+train_data = train_data[train_data['Sentiment'] != 'Text']
+
 # Analyze the 1st 5 posts of train_data file
 train_data.head()
 
@@ -55,7 +61,7 @@ train_data.info()
 #Function to clean tweets
  #Remove URLs
  #Remove usernames (mentions)
- #Remove special characters 
+ #Remove special characters EXCEPT FROM :,)
  #Remove Numbers 
 
 
@@ -100,7 +106,6 @@ ps = PorterStemmer()
 def tokenize(text):                    # funtion for tokenize words and analyze Text
     return word_tokenize(text)
 
-
 def stemming(words):
     stem_words = []
     for w in words:
@@ -117,7 +122,7 @@ train_data['tokenized'] = train_data['text'].apply(stemming)
 
 train_data.head()  #See the 1st 5 tokenize reults
 
-words = Counter()    # Words analyze  (5 most common) with count of them
+words = Counter()                       # Words analyze  (5 most common) with count of them
 for idx in train_data.index:
     words.update(train_data.loc[idx, "text"])
 
@@ -132,7 +137,7 @@ for idx, stop_word in enumerate(stopwords):
         del words[stop_word]
 words.most_common(5)
 
-def word_list(processed_data):    # WORDLIST FUNCTION FOR ANALYZE MOST COMMON WORDS WITH PURPOSE TO IDENTIFY OUR APP THE REAL SENTIMENT
+def word_list(processed_data): # WORDLIST FUNCTION FOR ANALYZE MOST COMMON WORDS WITH PURPOSE TO IDENTIFY OUR APP THE REAL SENTIMENT
     #print(processed_data)
     min_occurrences=3 
     max_occurences=500 
@@ -149,8 +154,8 @@ def word_list(processed_data):    # WORDLIST FUNCTION FOR ANALYZE MOST COMMON WO
     for idx, stop_word in enumerate(stopwords):
         if stop_word not in whitelist:
             del words[stop_word]
-   
-#print(words)
+    #print(words)
+
     word_df = pd.DataFrame(data={"word": [k for k, v in words.most_common() if min_occurrences < v < max_occurences],
                                  "occurrences": [v for k, v in words.most_common() if min_occurrences < v < max_occurences]},
                            columns=["word", "occurrences"])
@@ -159,13 +164,12 @@ def word_list(processed_data):    # WORDLIST FUNCTION FOR ANALYZE MOST COMMON WO
     wordlist = [k for k, v in words.most_common() if min_occurrences < v < max_occurences]
     #print(wordlist)
 
-word_list(train_data)  #TRAIN DATA INTO WORDLIST FOR ANALYZE
+word_list(train_data)    #TRAIN DATA INTO WORDLIST FOR ANALYZE
 
-words = pd.read_csv("wordlist.csv")  #CREATE WORDLIST CSV WITH THE MOST COMMON WORDS
+words = pd.read_csv("wordlist.csv") #CREATE WORDLIST CSV WITH THE MOST COMMON WORDS
 
 import os
-
-wordlist= []    #CREATE THE FILE WORDLIST
+wordlist= []      #CREATE THE FILE WORDLIST
 if os.path.isfile("wordlist.csv"):
     word_df = pd.read_csv("wordlist.csv")
     word_df = word_df[word_df["occurrences"] > 3]
@@ -196,9 +200,13 @@ data_labels = pd.Series(labels)
 
 bow = data_model
 
-import random
+import random    #Randomize the Texts
 seed = 777
 random.seed(seed)
+
+def log(x):
+    #can be used to write to log file
+     print(x)
 
 def test_classifier(X_train, y_train, X_test, y_test, classifier):
     log("")
@@ -212,7 +220,7 @@ def test_classifier(X_train, y_train, X_test, y_test, classifier):
     predictions = model.predict(X_test)
     log("Predicting time {0}s".format(time() - now))
 
-    # Calculate Accuracy, Precision, recall
+    # Calculate Accuracy, Precision, recall computation
     
     precision = precision_score(y_test, predictions, average=None, pos_label=None, labels=list_of_labels)
     recall = recall_score(y_test, predictions, average=None, pos_label=None, labels=list_of_labels)
@@ -220,34 +228,18 @@ def test_classifier(X_train, y_train, X_test, y_test, classifier):
     f1 = f1_score(y_test, predictions, average=None, pos_label=None, labels=list_of_labels)
     
     log("=================== Results ===================")
-    log("            Negative     Neutral     Positive")
-    log("F1       " + str(f1))
-    log("Precision" + str(precision))
-    log("Recall   " + str(recall))
-    log("Accuracy " + str(accuracy))
+    log("         Negative   Positive          ")
+    log("F1       " +   str(f1))
+    log("Precision" +   str(precision))
+    log("Recall   " +   str(recall))
+    log("Accuracy " +   str(accuracy))
     log("===============================================")
 
     return precision, recall, accuracy, f1
 
-def log(x):
-    #can be used to write to log file
-    print(x)
-
-from sklearn.naive_bayes import BernoulliNB
+from sklearn.naive_bayes import BernoulliNB  #Print f1, Precision, Recall ,Accuracy Score got Negatives and Positives Posts
 X_train, X_test, y_train, y_test = train_test_split(bow.iloc[:, 1:], bow['label'], test_size=0.3)
 precision, recall, accuracy, f1 = test_classifier(X_train, y_train, X_test, y_test, BernoulliNB())
-
-def cv(classifier, X_train, y_train):
-    log("===============================================")
-    classifier_name = str(type(classifier).__name__)
-    now = time()
-    log("Crossvalidating " + classifier_name + "...")
-    accuracy = [cross_val_score(classifier, X_train, y_train, cv=8, n_jobs=-1)]
-    log("Crosvalidation completed in {0}s".format(time() - now))
-    log("Accuracy: " + str(accuracy[0]))
-    log("Average accuracy: " + str(np.array(accuracy[0]).mean()))
-    log("===============================================")
-    return accuracy
 
 # Give text input for testing your post!
 # After clean tweet and print it!
